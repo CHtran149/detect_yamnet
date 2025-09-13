@@ -3,13 +3,14 @@ import time
 import numpy as np
 from multiprocessing.connection import Client
 from mic_array import MicArray
+
 print('Loading TensorFlow...')
 import tensorflow as tf
 
 print('Loading YAMNet TFLite...')
 
-# Load TFLite model
-interpreter = tf.lite.Interpreter(model_path="yamnet.tflite")
+# Load TFLite model (dùng bản đã convert)
+interpreter = tf.lite.Interpreter(model_path="yamnet_compatible.tflite")
 interpreter.allocate_tensors()
 
 # Lấy input và output
@@ -33,18 +34,22 @@ LOUDNESS_THRESHOLD = DOA_FRAMES * 16000
 THRESHOLD = 0.4
 
 def run_yamnet_tflite(waveform):
-    """Chạy inference trên model yamnet.tflite"""
-    waveform = waveform.astype(np.float32)
+    """Chạy inference trên model yamnet_compatible.tflite"""
+    # Đảm bảo float32
+    waveform = np.array(waveform, dtype=np.float32).flatten()
 
-    # YAMNet input shape: (n_samples,) hoặc (1, n_samples)
-    if len(waveform.shape) == 1:
-        waveform = np.expand_dims(waveform, axis=0)
+    # Thêm batch dimension => [1, N]
+    waveform = np.expand_dims(waveform, axis=0)
 
+    # Đưa vào model
     interpreter.set_tensor(input_details[0]['index'], waveform)
     interpreter.invoke()
+
+    # Lấy output
     scores = interpreter.get_tensor(output_details[0]['index'])  # (frames, 521)
 
-    prediction = np.mean(scores, axis=0)  # trung bình theo frames
+    # Lấy trung bình theo frames để ổn định hơn
+    prediction = np.mean(scores, axis=0)
     return prediction
 
 def main():
