@@ -5,12 +5,12 @@ from multiprocessing.connection import Client
 from mic_array import MicArray
 
 print('Loading TensorFlow...')
-import tensorflow as tf
+import tflite_runtime.interpreter as tflite
 
 print('Loading YAMNet TFLite...')
 
 # Load TFLite model (dùng bản đã convert)
-interpreter = tf.lite.Interpreter(model_path="yamnet_compatible.tflite")
+interpreter = tflite.Interpreter(model_path="yamnet_compatible.tflite")
 interpreter.allocate_tensors()
 
 # Lấy input và output
